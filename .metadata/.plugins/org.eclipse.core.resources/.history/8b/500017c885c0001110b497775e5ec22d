@@ -1,0 +1,23 @@
+package com.cafe.common.network;
+
+public enum ActionType {
+    LOGIN,
+    
+    // Employee actions
+    GET_CATEGORIES,
+    GET_PRODUCTS,
+    GET_TABLES,
+    CREATE_BILL,
+    CHECKOUT_BILL,
+    
+    // Management actions
+    ADD_PRODUCT, UPDATE_PRODUCT, DELETE_PRODUCT,
+    GET_EMPLOYEES, ADD_EMPLOYEE, UPDATE_EMPLOYEE, DELETE_EMPLOYEE,
+    GET_ALL_BILLS,
+    
+    // Order Actions
+    // Order Actions
+    ADD_TO_BILL,
+    GET_ACTIVE_BILL,
+    CHANGE_PASSWORD
+}

@@ -1,0 +1,40 @@
+package com.cafe.client.ui;
+
+import com.cafe.common.entity.Employee;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class ManagerDashboardFrame extends JFrame {
+    private Employee currentUser;
+    
+    public ManagerDashboardFrame(Employee user) {
+        this.currentUser = user;
+        setTitle("Quản Lý Quán Cafe - Quyền: " + user.getRole());
+        setSize(900, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        
+        JTabbedPane tabbedPane = new JTabbedPane();
+        
+        // Thêm các Tab quản lý
+        tabbedPane.addTab("Quản Lý Món", new ProductPanel());
+        tabbedPane.addTab("Quản Lý Hóa Đơn", new BillPanel());
+        tabbedPane.addTab("Quản Lý Nhân Viên", new EmployeePanel()); 
+        
+        add(tabbedPane, BorderLayout.CENTER);
+        
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(new JLabel("Xin chào, " + user.getFullName()), BorderLayout.WEST);
+        
+        JButton btnLogout = new JButton("Đăng Xuất");
+        btnLogout.addActionListener(e -> {
+            this.dispose();
+            new LoginFrame().setVisible(true);
+        });
+        bottomPanel.add(btnLogout, BorderLayout.EAST);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        
+        add(bottomPanel, BorderLayout.SOUTH);
+    }
+}

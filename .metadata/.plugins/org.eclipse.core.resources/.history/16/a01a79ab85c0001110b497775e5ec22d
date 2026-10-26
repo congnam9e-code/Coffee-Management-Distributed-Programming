@@ -1,0 +1,36 @@
+package com.cafe.server.service;
+
+import java.net.ServerSocket;
+import java.net.Socket;
+import com.cafe.server.dao.JPAUtil;
+
+public class ServerMain {
+    public static void main(String[] args) {
+        int port = com.cafe.common.network.Config.SERVER_PORT;
+        
+        // Khởi tạo JPA trước để test kết nối CSDL và tạo bảng
+        System.out.println("Initializing JPA EntityManagerFactory...");
+        try {
+            JPAUtil.getEntityManagerFactory();
+            System.out.println("JPA Connected to SQL Server! Database schemas are updated.");
+        } catch (Exception e) {
+            System.err.println("Failed to connect to Database. Check persistence.xml credentials!");
+            e.printStackTrace();
+            return;
+        }
+
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Cafe Server is running on port " + port);
+
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("New client connected: " + clientSocket.getInetAddress());
+                
+                ClientHandler handler = new ClientHandler(clientSocket);
+                new Thread(handler).start();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}

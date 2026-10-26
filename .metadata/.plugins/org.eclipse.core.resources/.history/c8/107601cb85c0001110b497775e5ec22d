@@ -1,0 +1,33 @@
+package com.cafe.common.network;
+
+import java.io.Serializable;
+
+public class OrderDto implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
+    private int tableId;
+    private int employeeId;
+    private int productId;
+    private int quantity;
+
+    public OrderDto() {}
+
+    public OrderDto(int tableId, int employeeId, int productId, int quantity) {
+        this.tableId = tableId;
+        this.employeeId = employeeId;
+        this.productId = productId;
+        this.quantity = quantity;
+    }
+
+    public int getTableId() { return tableId; }
+    public void setTableId(int tableId) { this.tableId = tableId; }
+
+    public int getEmployeeId() { return employeeId; }
+    public void setEmployeeId(int employeeId) { this.employeeId = employeeId; }
+
+    public int getProductId() { return productId; }
+    public void setProductId(int productId) { this.productId = productId; }
+
+    public int getQuantity() { return quantity; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
+}

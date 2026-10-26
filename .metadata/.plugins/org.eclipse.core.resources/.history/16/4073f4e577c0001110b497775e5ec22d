@@ -1,0 +1,137 @@
+package com.cafe.server.service;
+
+import com.cafe.common.network.ActionType;
+import com.cafe.common.network.Request;
+import com.cafe.common.network.Response;
+import com.cafe.common.entity.Employee;
+import com.cafe.server.dao.EmployeeDao;
+
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+
+public class ClientHandler implements Runnable {
+    private Socket socket;
+    private ObjectInputStream in;
+    private ObjectOutputStream out;
+    private EmployeeDao employeeDao;
+
+    public ClientHandler(Socket socket) {
+        this.socket = socket;
+        this.employeeDao = new EmployeeDao();
+    }
+
+    @Override
+    public void run() {
+        try {
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
+
+            while (true) {
+                Request request = (Request) in.readObject();
+                if (request == null) break;
+
+                Response response = new Response();
+
+                switch (request.getAction()) {
+                    case LOGIN:
+                        Employee creds = (Employee) request.getPayload();
+                        Employee user = employeeDao.login(creds.getUsername(), creds.getPassword());
+                        if (user != null) {
+                            response.setSuccess(true);
+                            response.setData(user);
+                            response.setMessage("Login successful");
+                        } else {
+                            response.setSuccess(false);
+                            response.setMessage("Invalid username or password");
+                        }
+                        break;
+                    case GET_CATEGORIES:
+                        response.setSuccess(true);
+                        response.setData(new com.cafe.server.dao.ProductDao().getAllCategories());
+                        break;
+                    case GET_PRODUCTS:
+                        response.setSuccess(true);
+                        response.setData(new com.cafe.server.dao.ProductDao().getAllProducts());
+                        break;
+                    case ADD_PRODUCT:
+                        com.cafe.common.entity.Product newProd = (com.cafe.common.entity.Product) request.getPayload();
+                        boolean added = new com.cafe.server.dao.ProductDao().addProduct(newProd);
+                        response.setSuccess(added);
+                        response.setMessage(added ? "Thêm món thành công" : "Lỗi thêm món");
+                        break;
+                    case UPDATE_PRODUCT:
+                        com.cafe.common.entity.Product upProd = (com.cafe.common.entity.Product) request.getPayload();
+                        boolean prodUpdated = new com.cafe.server.dao.ProductDao().updateProduct(upProd);
+                        response.setSuccess(prodUpdated);
+                        break;
+                    case DELETE_PRODUCT:
+                        int prodIdDel = (Integer) request.getPayload();
+                        boolean prodDeleted = new com.cafe.server.dao.ProductDao().deleteProduct(prodIdDel);
+                        response.setSuccess(prodDeleted);
+                        break;
+                    case GET_TABLES:
+                        response.setSuccess(true);
+                        response.setData(new com.cafe.server.dao.OrderDao().getAllTables());
+                        break;
+                    case GET_ACTIVE_BILL:
+                        int tableId = (Integer) request.getPayload();
+                        com.cafe.common.entity.Bill activeBill = new com.cafe.server.dao.OrderDao().getActiveBill(tableId);
+                        response.setSuccess(true);
+                        response.setData(activeBill);
+                        break;
+                    case ADD_TO_BILL:
+                        com.cafe.common.network.OrderDto order = (com.cafe.common.network.OrderDto) request.getPayload();
+                        boolean addedOrder = new com.cafe.server.dao.OrderDao().addToBill(
+                            order.getTableId(), order.getEmployeeId(), order.getProductId(), order.getQuantity());
+                        response.setSuccess(addedOrder);
+                        break;
+                    case CHECKOUT_BILL:
+                        int billId = (Integer) request.getPayload();
+                        boolean checkedOut = new com.cafe.server.dao.OrderDao().checkoutBill(billId);
+                        response.setSuccess(checkedOut);
+                        break;
+                    case GET_EMPLOYEES:
+                        response.setSuccess(true);
+                        response.setData(employeeDao.getAllEmployees());
+                        break;
+                    case ADD_EMPLOYEE:
+                        com.cafe.common.entity.Employee newEmp = (com.cafe.common.entity.Employee) request.getPayload();
+                        boolean empAdded = employeeDao.addEmployee(newEmp);
+                        response.setSuccess(empAdded);
+                        response.setMessage(empAdded ? "Thêm nhân viên thành công" : "Lỗi: Username đã tồn tại!");
+                        break;
+                    case UPDATE_EMPLOYEE:
+                        com.cafe.common.entity.Employee upEmp = (com.cafe.common.entity.Employee) request.getPayload();
+                        boolean empUpdated = employeeDao.updateEmployee(upEmp);
+                        response.setSuccess(empUpdated);
+                        break;
+                    case DELETE_EMPLOYEE:
+                        int empId = (Integer) request.getPayload();
+                        boolean empDeleted = employeeDao.deleteEmployee(empId);
+                        response.setSuccess(empDeleted);
+                        break;
+                    case GET_ALL_BILLS:
+                        response.setSuccess(true);
+                        response.setData(new com.cafe.server.dao.OrderDao().getAllBills());
+                        break;
+                    case CHANGE_PASSWORD:
+                        Object[] passData = (Object[]) request.getPayload();
+                        int empIdToChange = (Integer) passData[0];
+                        String newPass = (String) passData[1];
+                        boolean passChanged = employeeDao.changePassword(empIdToChange, newPass);
+                        response.setSuccess(passChanged);
+                        response.setMessage(passChanged ? "Đổi mật khẩu thành công!" : "Lỗi đổi mật khẩu!");
+                        break;
+                    default:
+                        response.setSuccess(false);
+                        response.setMessage("Unknown action");
+                }
+                out.writeObject(response);
+                out.flush();
+            }
+        } catch (Exception e) {
+            System.out.println("Client disconnected: " + socket.getInetAddress());
+        }
+    }
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Báo Cáo Đồ Án Lập Trình Phân Tán</title>
+    <style>
+        body { 
+            font-family: 'Times New Roman', Times, serif; 
+            line-height: 1.6; 
+            margin: 40px auto; 
+            max-width: 900px; 
+            padding: 20px; 
+            color: #000;
+        }
+        h1 { text-align: center; font-size: 24pt; margin-bottom: 20px; text-transform: uppercase;}
+        h2 { font-size: 18pt; margin-top: 30px; border-bottom: 1px solid #ccc; padding-bottom: 5px;}
+        h3 { font-size: 14pt; margin-top: 20px; }
+        p { font-size: 13pt; text-align: justify; margin-bottom: 10px; }
+        ul, ol { font-size: 13pt; margin-bottom: 15px; }
+        li { margin-bottom: 8px; }
+        .center { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13pt;}
+        table, th, td { border: 1px solid black; }
+        th, td { padding: 8px; text-align: left; }
+        .mermaid { text-align: center; margin: 20px 0; }
+        @media print {
+            body { margin: 0; padding: 0; max-width: 100%; }
+            h2 { page-break-before: auto; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true});</script>
+</head>
+<body>
+
+    <h1>BÁO CÁO ĐỒ ÁN LẬP TRÌNH PHÂN TÁN<br><br>Đề tài: Ứng dụng Quản lý Quán Cafe (Client - Server)</h1>
+    
+    <h2>Chương 1: Giới thiệu đề tài</h2>
+    <h3>1.1 Tìm hiểu nghiệp vụ</h3>
+    <p>Hiện nay, sự phát triển của các mô hình kinh doanh quán cafe đòi hỏi phải có một hệ thống quản lý chuyên nghiệp, xử lý dữ liệu nhanh chóng và đồng bộ. Quy trình nghiệp vụ tại quán cafe cơ bản chia làm 2 đối tượng người dùng: Nhân viên (Staff) và Quản lý (Manager).</p>
+    <ul>
+        <li><b>Nghiệp vụ của Nhân viên:</b> Đăng nhập ca làm việc, tiếp nhận yêu cầu gọi món từ khách hàng tại các bàn, cập nhật vào hệ thống hóa đơn đang mở. Khi khách hàng rời đi, nhân viên tiến hành chốt bill và thanh toán. Ngoài ra, nhân viên có quyền theo dõi thông tin cá nhân và thay đổi mật khẩu của mình.</li>
+        <li><b>Nghiệp vụ của Quản lý:</b> Quản lý toàn bộ danh mục sản phẩm (thêm/sửa/xóa thức uống), quản lý thông tin và tài khoản của nhân viên trong quán. Cuối cùng, quản lý có quyền xem và rà soát toàn bộ các hóa đơn đã được thanh toán hoặc đang phục vụ trong ngày/tháng.</li>
+    </ul>
+    
+    <h3>1.2 Mục tiêu đề tài</h3>
+    <p>Xây dựng hệ thống quản lý quán Cafe dựa trên kiến trúc Client - Server sử dụng Java Socket. Server đóng vai trò xử lý nghiệp vụ tập trung và tương tác với Cơ sở dữ liệu thông qua công nghệ Java Persistence API (JPA/Hibernate), trong khi Client (Java Swing) cung cấp giao diện người dùng trực quan, kết nối tới Server qua mạng LAN/Internet.</p>
+
+    <h2>Chương 2: Phân tích ứng dụng</h2>
+    
+    <h3>2.1 Use Case Diagram (Biểu đồ ca sử dụng)</h3>
+    <p>Dưới đây là biểu đồ mô tả các chức năng của từng Actor (Người dùng) trong hệ thống:</p>
+    <div class="mermaid">
+    flowchart LR
+        subgraph Hệ Thống Quản Lý Quán Cafe
+            UC1(Đăng nhập)
+            UC2(Đổi mật khẩu)
+            UC3(Nhận đặt món)
+            UC4(Thanh toán hóa đơn)
+            UC5(Quản lý món ăn/thức uống)
+            UC6(Quản lý nhân viên)
+            UC7(Quản lý toàn bộ hóa đơn)
+        end
+        
+        Staff((Nhân viên))
+        Manager((Quản lý))
+        
+        Staff --> UC1
+        Staff --> UC2
+        Staff --> UC3
+        Staff --> UC4
+        
+        Manager --> UC1
+        Manager --> UC5
+        Manager --> UC6
+        Manager --> UC7
+    </div>
+    
+    <h3>2.2 Database Diagram (Biểu đồ cơ sở dữ liệu)</h3>
+    <p>Dựa trên việc áp dụng JPA ORM, cấu trúc cơ sở dữ liệu (Entity-Relationship) của ứng dụng được thiết kế như sau:</p>
+    <div class="mermaid">
+    erDiagram
+        EMPLOYEE {
+            int id PK
+            string username
+            string password
+            string fullName
+            string role
+        }
+        CATEGORY {
+            int id PK
+            string name
+        }
+        PRODUCT {
+            int id PK
+            string name
+            float price
+            int category_id FK
+        }
+        COFFEE_TABLE {
+            int id PK
+            string name
+            string status
+        }
+        BILL {
+            int id PK
+            int table_id FK
+            int employee_id FK
+            datetime checkInTime
+            datetime checkOutTime
+            string status
+            float totalAmount
+        }
+        BILL_DETAIL {
+            int id PK
+            int bill_id FK
+            int product_id FK
+            int quantity
+            float price
+        }
+        
+        CATEGORY ||--|{ PRODUCT : has
+        COFFEE_TABLE ||--o{ BILL : creates
+        EMPLOYEE ||--o{ BILL : processes
+        BILL ||--|{ BILL_DETAIL : contains
+        PRODUCT ||--o{ BILL_DETAIL : is_in
+    </div>
+
+    <h2>Chương 3: Xây dựng ứng dụng</h2>
+    <h3>3.1 Kiến trúc phần mềm</h3>
+    <p>Hệ thống được chia thành 3 modules chính:</p>
+    <ul>
+        <li><b>Common Module:</b> Chứa các thực thể Database (Entity) và các đối tượng DTO dùng để gói dữ liệu truyền tải qua mạng (Request, Response, ActionType).</li>
+        <li><b>Server Module:</b> Chứa <code>ServerMain</code> mở cổng Socket để lắng nghe kết nối, `ClientHandler` xử lý đa luồng (Multi-threading) và các DAO (`ProductDao`, `OrderDao`, `EmployeeDao`) sử dụng JPA/Hibernate tương tác với SQL Server.</li>
+        <li><b>Client Module:</b> Giao diện GUI xây dựng bằng Java Swing, giao tiếp với Server thông qua <code>SocketClient</code> (áp dụng Singleton Pattern).</li>
+    </ul>
+
+    <h3>3.2 Các form chức năng đã thực hiện</h3>
+    <ul>
+        <li><b>Form Đăng nhập (LoginFrame):</b> Cấu hình địa chỉ IP máy chủ linh hoạt (hỗ trợ triển khai đa máy trong mạng LAN), xác thực người dùng và tự động điều hướng vào giao diện tương ứng với role (MANAGER hoặc STAFF).</li>
+        <li><b>Form Bán hàng (StaffDashboardFrame):</b>
+            <ul>
+                <li>Hiển thị sơ đồ bàn trực quan (đổi màu bàn trống/đang có khách).</li>
+                <li>Chức năng xem chi tiết hóa đơn (BillDetails) của từng bàn.</li>
+                <li>Chức năng Thêm món vào bàn (tự động cộng dồn số lượng nếu món đã có sẵn trong hóa đơn).</li>
+                <li>Chức năng Thanh toán và trả bàn về trạng thái trống.</li>
+                <li>Chức năng Xem thông tin cá nhân và Đổi mật khẩu an toàn (xác thực mật khẩu hiện tại).</li>
+            </ul>
+        </li>
+        <li><b>Form Quản trị (ManagerDashboardFrame):</b> Gồm 3 Tab chức năng riêng biệt:
+            <ul>
+                <li><i>Tab Quản lý Món:</i> CRUD danh sách thức uống, giá tiền, kèm thanh tìm kiếm/lọc món ăn theo thời gian thực.</li>
+                <li><i>Tab Quản lý Nhân viên:</i> CRUD danh sách tài khoản, phân quyền nhân sự (STAFF/MANAGER).</li>
+                <li><i>Tab Quản lý Hóa đơn:</i> Theo dõi toàn bộ lịch sử bán hàng theo thời gian thực.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>Chương 4: Kết luận</h2>
+    <h3>4.1 Kết quả đạt được</h3>
+    <ul>
+        <li>Ứng dụng đã hoàn thành 100% các chức năng cốt lõi được giao.</li>
+        <li>Triển khai thành công kiến trúc Client - Server đa luồng (Multi-threaded), cho phép nhiều máy nhân viên cùng lúc thao tác trên dữ liệu chung mà không bị xung đột.</li>
+        <li>Khai thác và tích hợp thành công JPA (Java Persistence API), giúp mã nguồn dễ bảo trì, tăng tốc độ lập trình và ánh xạ chuẩn xác xuống SQL Server.</li>
+    </ul>
+    
+    <h3>4.2 Hạn chế</h3>
+    <ul>
+        <li>Việc phân chia gói tin gửi qua Socket đôi lúc còn truyền trực tiếp Entity của JPA gây nặng đường truyền mạng (Entity Leakage).</li>
+        <li>Mật khẩu của người dùng hiện đang được lưu dưới định dạng plain-text chưa qua mã hóa.</li>
+        <li>Giao diện (UI) sử dụng Java Swing thuần còn khá đơn điệu, chưa thực sự tối ưu cho màn hình cảm ứng hoặc độ phân giải cao.</li>
+    </ul>
+    
+    <h3>4.3 Hướng phát triển</h3>
+    <ul>
+        <li>Cải thiện bảo mật: Hash (băm) mật khẩu bằng BCrypt/SHA-256 trước khi lưu xuống cơ sở dữ liệu.</li>
+        <li>Chuyển đổi giao diện sang các thư viện hiện đại như FlatLaf hoặc đổi sang nền tảng Web/Mobile.</li>
+        <li>Phát triển thêm tính năng in hóa đơn bằng máy in nhiệt và vẽ biểu đồ thống kê doanh thu tự động.</li>
+    </ul>
+
+    <h2>Tài liệu tham khảo</h2>
+    <ol>
+        <li>Tài liệu hướng dẫn Lập trình phân tán - Network Programming (Java Socket).</li>
+        <li>Hibernate ORM Documentation & Jakarta Persistence (JPA) Specification.</li>
+        <li>Microsoft SQL Server JDBC Driver Documentation.</li>
+    </ol>
+</body>
+</html>

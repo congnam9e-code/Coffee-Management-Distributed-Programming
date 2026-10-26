@@ -1,0 +1,180 @@
+package com.cafe.client.ui;
+
+import com.cafe.client.socket.SocketClient;
+import com.cafe.common.entity.Category;
+import com.cafe.common.entity.Product;
+import com.cafe.common.network.ActionType;
+import com.cafe.common.network.Request;
+import com.cafe.common.network.Response;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.util.List;
+
+public class ProductPanel extends JPanel {
+    private JTable table;
+    private DefaultTableModel tableModel;
+    private JTextField txtName, txtPrice;
+    private JComboBox<Category> cbCategory;
+    private JButton btnAdd, btnUpdate, btnDelete, btnRefresh;
+
+    public ProductPanel() {
+        setLayout(new BorderLayout());
+
+        // Table
+        tableModel = new DefaultTableModel(new String[]{"ID", "Tên Món", "Giá", "Loại"}, 0);
+        table = new JTable(tableModel);
+        add(new JScrollPane(table), BorderLayout.CENTER);
+
+        // Input Form
+        JPanel formPanel = new JPanel(new GridLayout(4, 2, 5, 5));
+        formPanel.setBorder(BorderFactory.createTitledBorder("Thông tin món"));
+
+        formPanel.add(new JLabel("Tên món:"));
+        txtName = new JTextField();
+        formPanel.add(txtName);
+
+        formPanel.add(new JLabel("Giá bán:"));
+        txtPrice = new JTextField();
+        formPanel.add(txtPrice);
+
+        formPanel.add(new JLabel("Danh mục:"));
+        cbCategory = new JComboBox<>();
+        formPanel.add(cbCategory);
+
+        btnAdd = new JButton("Thêm");
+        btnUpdate = new JButton("Sửa");
+        btnDelete = new JButton("Xóa");
+        btnRefresh = new JButton("Làm mới");
+        
+        JPanel btnGroup = new JPanel(new GridLayout(2, 2, 5, 5));
+        btnGroup.add(btnAdd);
+        btnGroup.add(btnUpdate);
+        btnGroup.add(btnDelete);
+        btnGroup.add(btnRefresh);
+
+        formPanel.add(new JLabel("Thao tác:"));
+        formPanel.add(btnGroup);
+
+        add(formPanel, BorderLayout.EAST);
+
+        // Selection Listener
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && table.getSelectedRow() != -1) {
+                int row = table.getSelectedRow();
+                txtName.setText(tableModel.getValueAt(row, 1).toString());
+                txtPrice.setText(tableModel.getValueAt(row, 2).toString());
+                String catName = tableModel.getValueAt(row, 3).toString();
+                for (int i = 0; i < cbCategory.getItemCount(); i++) {
+                    if (cbCategory.getItemAt(i).getName().equals(catName)) {
+                        cbCategory.setSelectedIndex(i);
+                        break;
+                    }
+                }
+            }
+        });
+
+        // Events
+        btnRefresh.addActionListener(e -> loadData());
+        btnAdd.addActionListener(e -> addProduct());
+        btnUpdate.addActionListener(e -> updateProduct());
+        btnDelete.addActionListener(e -> deleteProduct());
+
+        // Load data on startup
+        loadData();
+    }
+
+    private void loadData() {
+        // Load Categories
+        Response catRes = SocketClient.getInstance().sendRequest(new Request(ActionType.GET_CATEGORIES, null));
+        if (catRes != null && catRes.isSuccess()) {
+            List<Category> categories = (List<Category>) catRes.getData();
+            cbCategory.removeAllItems();
+            for (Category c : categories) cbCategory.addItem(c);
+        }
+
+        // Load Products
+        Response prodRes = SocketClient.getInstance().sendRequest(new Request(ActionType.GET_PRODUCTS, null));
+        if (prodRes != null && prodRes.isSuccess()) {
+            List<Product> products = (List<Product>) prodRes.getData();
+            tableModel.setRowCount(0); // clear table
+            for (Product p : products) {
+                String catName = p.getCategory() != null ? p.getCategory().getName() : "";
+                tableModel.addRow(new Object[]{p.getId(), p.getName(), p.getPrice(), catName});
+            }
+        }
+    }
+
+    private void addProduct() {
+        try {
+            String name = txtName.getText();
+            float price = Float.parseFloat(txtPrice.getText());
+            Category selectedCat = (Category) cbCategory.getSelectedItem();
+
+            if (name.isEmpty() || selectedCat == null) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập đủ thông tin!");
+                return;
+            }
+
+            Product p = new Product();
+            p.setName(name);
+            p.setPrice(price);
+            p.setCategory(selectedCat);
+
+            Response res = SocketClient.getInstance().sendRequest(new Request(ActionType.ADD_PRODUCT, p));
+            if (res != null && res.isSuccess()) {
+                JOptionPane.showMessageDialog(this, "Đã thêm món mới!");
+                txtName.setText("");
+                txtPrice.setText("");
+                loadData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Lỗi thêm món!");
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Giá bán phải là số!");
+        }
+    }
+
+    private void updateProduct() {
+        if (table.getSelectedRow() == -1) {
+            JOptionPane.showMessageDialog(this, "Chọn món cần sửa!");
+            return;
+        }
+        try {
+            int id = (int) tableModel.getValueAt(table.getSelectedRow(), 0);
+            Product p = new Product();
+            p.setId(id);
+            p.setName(txtName.getText().trim());
+            p.setPrice(Float.parseFloat(txtPrice.getText().trim()));
+            p.setCategory((Category) cbCategory.getSelectedItem());
+
+            Response res = SocketClient.getInstance().sendRequest(new Request(ActionType.UPDATE_PRODUCT, p));
+            if (res != null && res.isSuccess()) {
+                JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
+                loadData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Lỗi: " + (res != null ? res.getMessage() : "Mất kết nối"));
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Thông tin không hợp lệ!");
+        }
+    }
+
+    private void deleteProduct() {
+        if (table.getSelectedRow() == -1) {
+            JOptionPane.showMessageDialog(this, "Chọn món cần xóa!");
+            return;
+        }
+        int id = (int) tableModel.getValueAt(table.getSelectedRow(), 0);
+        if (JOptionPane.showConfirmDialog(this, "Xóa món này?", "Xác nhận", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+            Response res = SocketClient.getInstance().sendRequest(new Request(ActionType.DELETE_PRODUCT, id));
+            if (res != null && res.isSuccess()) {
+                JOptionPane.showMessageDialog(this, "Xóa thành công!");
+                loadData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Lỗi: " + (res != null ? res.getMessage() : "Mất kết nối"));
+            }
+        }
+    }
+}

@@ -1,0 +1,72 @@
+package com.cafe.client.ui;
+
+import com.cafe.client.socket.SocketClient;
+import com.cafe.common.entity.Employee;
+import com.cafe.common.network.ActionType;
+import com.cafe.common.network.Request;
+import com.cafe.common.network.Response;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+
+public class LoginFrame extends JFrame {
+    private JTextField txtUsername;
+    private JPasswordField txtPassword;
+    private JButton btnLogin;
+
+    public LoginFrame() {
+        setTitle("Cafe Management - Login");
+        setSize(350, 200);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        
+        // Simple UI layout
+        JPanel panel = new JPanel(new GridLayout(3, 2, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        panel.add(new JLabel("Username:"));
+        txtUsername = new JTextField();
+        panel.add(txtUsername);
+
+        panel.add(new JLabel("Password:"));
+        txtPassword = new JPasswordField();
+        panel.add(txtPassword);
+
+        btnLogin = new JButton("Login");
+        panel.add(new JLabel("")); // spacer
+        panel.add(btnLogin);
+
+        add(panel);
+
+        btnLogin.addActionListener(this::handleLogin);
+    }
+
+    private void handleLogin(ActionEvent e) {
+        String username = txtUsername.getText();
+        String password = new String(txtPassword.getPassword());
+
+        Employee creds = new Employee();
+        creds.setUsername(username);
+        creds.setPassword(password);
+
+        Request req = new Request(ActionType.LOGIN, creds);
+        Response res = SocketClient.getInstance().sendRequest(req);
+
+        if (res != null && res.isSuccess()) {
+            Employee user = (Employee) res.getData();
+            JOptionPane.showMessageDialog(this, "Đăng nhập thành công! Xin chào " + user.getFullName() + " (" + user.getRole() + ")");
+            
+            // Mở form Dashboard dành cho Quản lý hoặc Nhân viên
+            this.dispose(); // Đóng form đăng nhập
+            if ("MANAGER".equals(user.getRole())) {
+                new ManagerDashboardFrame(user).setVisible(true);
+            } else {
+                new StaffDashboardFrame(user).setVisible(true);
+            }
+            
+        } else {
+            JOptionPane.showMessageDialog(this, "Sai tài khoản hoặc mật khẩu!", "Lỗi đăng nhập", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}
