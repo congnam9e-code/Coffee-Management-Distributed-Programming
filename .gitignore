@@ -1,1 +1,18 @@
+# Build outputs (Maven & Eclipse)
+target/
+bin/
+*.class
 /CafeeManagement/target/
+/CafeeServer/target/
+/CafeeClient/bin/
+/temp_jar_build/
+
+# Eclipse local workspace & generated APT sources
+.metadata/
+.apt_generated/
+*.log
+
+# OS / Office temporary files
+~$*
+Thumbs.db
+.DS_Store
